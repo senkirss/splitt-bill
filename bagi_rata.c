@@ -38,7 +38,6 @@ double input_angka(const char *pesan) {
             continue;
         }
 
-        /* validasi hanya angka desimal positif, tolak huruf atau karakter acak */
         if (sscanf(buffer, "%lf %c", &nilai, &sisa) == 1 && nilai >= 0.0) {
             return nilai;
         }
