@@ -41,8 +41,8 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
 * **Pembulatan Otomatis (*Smart Ceiling Rounding*):** Membulatkan setiap tagihan individu ke atas ke kelipatan seribu terdekat ($\text{Rp}1.000$) menggunakan fungsi `ceil()` untuk menghilangkan pecahan ganjil dan mempermudah transaksi digital.
 * **Koreksi Presisi Floating-Point IEEE 754:** Mengantisipasi ketidakakuratan representasi biner bilangan pecahan di C (toleransi $\epsilon = 10^{-4}$) agar nilai kelipatan bulat pas tidak melompat ke atas.
 * **Transparansi Rekonsiliasi Kas (*Change Transparency*):** Menghitung dan menampilkan total akumulasi dana lebih hasil pembulatan untuk digunakan sebagai tip kasir atau kas bersama secara terbuka.
-* **Validasi Input Kebal Error (*Fault-Tolerant Input*):** Menolak karakter selain angka pada subtotal, pajak, dan servis secara otomatis menggunakan kombinasi `fgets` dan `sscanf`, menampilkan peringatan `"tolong masukin angka ya"`, dan mengulang permintaan input tanpa merusak buffer memori.
-* **Penyajian Tabel Presisi & Terformat (*Symmetric ASCII Box*):** Mengonversi angka ke format Rupiah standar (`Rp XX.XXX`) dengan pemisah ribuan dan menyajikan tabel simetris selebar 77 kolom yang sejajar rapi.
+* **Validasi Input Kebal Error (*Fault-Tolerant Input*):** Menolak karakter selain angka pada jumlah orang, subtotal, pajak, dan servis secara otomatis menggunakan kombinasi `fgets` dan `sscanf`, menampilkan peringatan `"tolong masukin angka ya"`, dan mengulang permintaan input tanpa merusak buffer memori.
+* **Penyajian Tabel Presisi & Terformat (*Symmetric ASCII Box*):** Menampilkan banner pembuka dan ringkasan tagihan selebar 77 kolom yang sejajar rapi, serta mengonversi angka ke format Rupiah standar (`Rp XX.XXX`) dengan pemisah ribuan.
 * **Perulangan Sesi Transaksi (*Interactive Session Loop*):** Membungkus eksekusi dalam perulangan `do-while` sehingga pengguna dapat menghitung transaksi baru (`[y/n]`) tanpa membuka ulang *executable*.
 
 ---
@@ -51,9 +51,9 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
 
 ### 5.1 Fitur Inti (*Core Features*)
 1. **Pencatatan Peserta & Pesanan:**
-   * Menerima input jumlah orang ($N$, maksimal 50 orang).
-   * Menerima input nama peserta (mendukung karakter spasi hingga 49 karakter).
-   * Menerima input total nilai pesanan individu (validasi angka non-negatif).
+   * Menerima input jumlah orang ($N$, rentang $1 \le N \le 50$, menolak karakter non-angka atau di luar rentang dengan alert `"tolong masukin angka ya"`).
+   * Menerima input nama peserta (buffer 50 karakter dengan batas lebar tampilan kolom tabel 16 karakter).
+   * Menerima input total nilai pesanan individu (validasi angka desimal non-negatif via `input_angka`).
 2. **Pengaturan Pajak & Servis:**
    * Menerima input persentase pajak restoran (misal: $10\%$).
    * Menerima input persentase biaya servis (misal: $5\%$).
@@ -63,11 +63,13 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
    * Menghitung faktor pengali biaya tambahan: $\text{faktor} = 1 + \frac{\text{pajak} + \text{servis}}{100}$.
    * Menghitung tagihan riil dan tagihan setelah pembulatan ke kelipatan Rp1.000.
 4. **Laporan & Rekonsiliasi Kas:**
+   * Menampilkan banner pembuka terminal selebar 77 kolom (`BAGI RATA - SPLIT BILL`).
    * Menampilkan tabel berbingkai rapi (lebar 77 kolom).
-   * Menampilkan kolom: No, Nama, Pesanan, Tagihan Asli, dan Wajib Bayar (rata kanan).
-   * Menampilkan ringkasan: Total Makanan, Pajak & Service (Faktor), Total Riil Struk, Total Terkumpul, serta Sisa Lebih / Tip Kasir.
+   * Menampilkan kolom: No (`%-3d`) dan Nama (`%-16s`) rata kiri, serta Pesanan (`%14s`), Tagihan Asli (`%14s`), dan Wajib Bayar (`%14s`) rata kanan.
+   * Menampilkan ringkasan: Total Pesanan Makanan, Pajak & Service format `%.1f%% (Faktor: %.4f)`, Total Riil Struk, Total Uang Terkumpul, serta Sisa Lebih / Tip Kasir.
 5. **Perulangan Sesi:**
    * Menanyakan konfirmasi `Hitung tagihan baru lagi? (y/n): ` di akhir proses.
+   * Menampilkan pesan penutup `"Terima kasih telah menggunakan Bagi Rata!"` saat sesi diakhiri.
 
 ### 5.2 Batasan Sistem (*Constraints*)
 * Standar C99 murni tanpa pustaka eksternal pihak ketiga.
@@ -114,13 +116,16 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
 [DO: Mulai Sesi Transaksi]
    │
    ▼
+[Cetak Banner Header 77 Kolom: "BAGI RATA - SPLIT BILL"]
+   │
+   ▼
 [Input Jumlah Orang: N] ──(Bukan Angka / N <= 0 / N > 50)──► [Cetak: "tolong masukin angka ya"] ──┐
    │                                                                                              │
    ◄──────────────────────────────────────────────────────────────────────────────────────────────┘
    │
    ▼
 [Loop i = 0 s.d. N-1]
-   ├─► [Input Nama Peserta (mendukung spasi)]
+   ├─► [Input Nama Peserta (buffer 50 karakter)]
    └─► [Input Subtotal Pesanan] ──(Input Huruf/Negatif)──► [Cetak: "tolong masukin angka ya"] ──┐
           │                                                                                     │
           ◄─────────────────────────────────────────────────────────────────────────────────────┘
@@ -138,9 +143,9 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
    │
    ▼
 [Cetak Tabel Ringkasan Presisi (Lebar 77 Kolom)]
-   ├─► Header Box & Kolom Header Rata Kanan
+   ├─► Header Box & Kolom (No/Nama rata kiri, Pesanan/Tagihan Asli/Wajib Bayar rata kanan)
    ├─► Baris Peserta Terformat Rupiah (Rp XX.XXX)
-   └─► Ringkasan Finansial & Tip Kasir
+   └─► Ringkasan Finansial (Total Pesanan Makanan, Pajak & Service, Riil, Terkumpul, Tip Kasir)
    │
    ▼
 [Prompt: Hitung tagihan baru lagi? (y/n)]
@@ -150,7 +155,7 @@ Bagi Rata menawarkan pendekatan komputasi terstruktur melalui fitur-fitur beriku
    └─► ['n' / lainnya]
           │
           ▼
-       [Cetak Pesan Penutup & Selesai]
+       [Cetak: "Terima kasih telah menggunakan Bagi Rata!" & Selesai]
 ```
 
 ---
